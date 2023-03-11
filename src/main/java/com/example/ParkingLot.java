@@ -16,11 +16,13 @@ class Bike extends Vehicle {
         super(number, VehicleType.BIKE);
     }
 }
+
 class Car extends Vehicle {
     Car(String number) {
         super(number, VehicleType.CAR);
     }
 }
+
 class Truck extends Vehicle {
     Truck(String number) {
         super(number, VehicleType.TRUCK);
@@ -42,6 +44,8 @@ class Ticket {
     String number;
     Date date;
     Vehicle vehicle;
+    Spot spot;
+    int id;
 }
 
 @AllArgsConstructor
@@ -124,11 +128,13 @@ class BikeSpot extends Spot {
         super(SpotType.TWO_WHEELER_SPOT);
     }
 }
+
 class CarSpot extends Spot {
     CarSpot() {
         super(SpotType.FOUR_WHEELER_SPOT);
     }
 }
+
 class HeavyVehicleSpot extends Spot {
     HeavyVehicleSpot() {
         super(SpotType.HEAVY_VEHICLE_SPOT);
@@ -142,7 +148,7 @@ interface ParkingLotAppInterface {
 
     Bill exit(Ticket ticket);
 
-    double calculateBill(Ticket ticket);
+    Bill calculateBill(Ticket ticket);
 
     boolean makePayment(Bill bill, PaymentType paymentType);
 }
@@ -248,6 +254,20 @@ class Logger {
 
 }
 
+class TicketManager {
+    Map<Integer, Ticket> tMap = new HashMap<>();
+    int counter = 0;
+    public Ticket getTicket(int id){
+        return tMap.getOrDefault(id, null);
+    }    
+    public void setTicket(Ticket ticket){
+        counter++;
+        ticket.id = counter;
+        System.out.println(ticket);
+        tMap.put(counter, ticket);
+    }    
+}
+
 @AllArgsConstructor
 @Data
 class ParkingLotApp implements ParkingLotAppInterface {
@@ -255,28 +275,33 @@ class ParkingLotApp implements ParkingLotAppInterface {
     PaymentManager paymentManager;
     BillingStrategy billingStrategy;
     Logger logger;
+    TicketManager ticketManager;
 
     @Override
     public Ticket enter(Vehicle vehicle) {
-        return new Ticket(vehicle.number, new Date(), vehicle);
+        Ticket ticket = new Ticket(vehicle.number, new Date(), vehicle, null, -1);
+        ticketManager.setTicket(ticket);
+        return ticket;
     }
 
     @Override
     public Spot parkVehicle(Ticket ticket) {
         Vehicle vehicle = ticket.vehicle;
         Spot spot = parkingLayout.getAvailableSpot(vehicle.vehicleType);
+        ticket.setSpot(spot);
         spot.setSpotStatus(SpotStatus.OCCUPIED);
         return spot;
     }
 
     @Override
     public Bill exit(Ticket ticket) {
-        return null;
+        ticket.spot.setSpotStatus(SpotStatus.FREE);
+        return calculateBill(ticket);
     }
 
     @Override
-    public double calculateBill(Ticket ticket) {
-        return 0.0;
+    public Bill calculateBill(Ticket ticket) {
+        return new Bill(0.0, null, null);
     }
 
     @Override
@@ -290,16 +315,17 @@ public class ParkingLot {
         System.out.println("ParkingLot.main()");
         ParkingLotApp app = new ParkingLotApp(
                 new ParkingLayout(new InMemoryDao(Map.of(
-                    SpotType.TWO_WHEELER_SPOT, List.of(new BikeSpot()),
-                    SpotType.FOUR_WHEELER_SPOT, List.of(new CarSpot()),
-                    SpotType.HEAVY_VEHICLE_SPOT, List.of(new HeavyVehicleSpot())
-                ))),
+                        SpotType.TWO_WHEELER_SPOT, List.of(new BikeSpot()),
+                        SpotType.FOUR_WHEELER_SPOT, List.of(new CarSpot()),
+                        SpotType.HEAVY_VEHICLE_SPOT, List.of(new HeavyVehicleSpot())))),
                 new PaymentManager(),
                 new BasicBillingStrategy(),
-                new Logger());
+                new Logger(),
+                new TicketManager());
         System.out.println(app.parkVehicle(app.enter(new Bike("KA-53-MK-0926"))));
         System.out.println(app.parkVehicle(app.enter(new Bike("KA-53-MK-0926"))));
         System.out.println(app.parkVehicle(app.enter(new Bike("KA-53-MK-0926"))));
+        app.exit(app.ticketManager.getTicket(3));
         System.out.println(app.parkVehicle(app.enter(new Bike("KA-53-MK-0926"))));
     }
 }
