@@ -11,22 +11,37 @@ abstract class Vehicle {
     VehicleType vehicleType;
 }
 
+class Bike extends Vehicle {
+    Bike(String number) {
+        super(number, VehicleType.BIKE);
+    }
+}
 class Car extends Vehicle {
-    Car(String number){
+    Car(String number) {
         super(number, VehicleType.CAR);
     }
 }
-
-enum VehicleType {
-    BIKE,
-    CAR,
-    TRUCK
+class Truck extends Vehicle {
+    Truck(String number) {
+        super(number, VehicleType.TRUCK);
+    }
 }
+
+@AllArgsConstructor
+enum VehicleType {
+    BIKE(1),
+    CAR(2),
+    TRUCK(3);
+
+    int level;
+}
+
 @AllArgsConstructor
 @Data
 class Ticket {
     String number;
     Date date;
+    Vehicle vehicle;
 }
 
 @AllArgsConstructor
@@ -39,45 +54,91 @@ class Bill {
 
 interface SpotInterface {
     boolean isEmpty();
+
     boolean park(Vehicle vehicle);
+
+    boolean release(Vehicle vehicle);
 }
-@AllArgsConstructor
+
 @Data
-abstract class Spot implements SpotInterface{
-    boolean isEmpty;
+abstract class Spot implements SpotInterface {
+    SpotStatus spotStatus;
     SpotType spotType;
+    Vehicle vehicle;
+
+    Spot(SpotType spotType) {
+        this.spotType = spotType;
+        this.spotStatus = SpotStatus.FREE;
+    }
 
     @Override
     public boolean isEmpty() {
-        return isEmpty;
+        return spotStatus.equals(SpotStatus.FREE);
+    }
+
+    static List<SpotType> getOrderedSpot() {
+        return List.of(
+                SpotType.TWO_WHEELER_SPOT,
+                SpotType.FOUR_WHEELER_SPOT,
+                SpotType.HEAVY_VEHICLE_SPOT);
     }
 
     @Override
     public boolean park(Vehicle vehicle) {
-        if(isEmpty == true) {
-            isEmpty = false;
+        if (spotStatus.equals(SpotStatus.FREE)) {
+            spotStatus = SpotStatus.OCCUPIED;
+            this.vehicle = vehicle;
+            return true;
+        }
+        return false;
+    }
+
+    @Override
+    public boolean release(Vehicle vehicle) {
+        if (spotStatus.equals(SpotStatus.OCCUPIED)) {
+            spotStatus = SpotStatus.FREE;
+            this.vehicle = null;
             return true;
         }
         return false;
     }
 }
+
+enum SpotStatus {
+    FREE,
+    OCCUPIED,
+    MAINTAINENCE
+}
+
+@AllArgsConstructor
 enum SpotType {
-    TWO_WHEELER_SPOT,
-    FOUR_WHEELER_SPOT,
-    HEAVY_VEHICLE_SPOT
+    TWO_WHEELER_SPOT(1),
+    FOUR_WHEELER_SPOT(2),
+    HEAVY_VEHICLE_SPOT(3);
+
+    int level;
 }
 
 class BikeSpot extends Spot {
-    BikeSpot(){
-        super(true, SpotType.TWO_WHEELER_SPOT);
+    BikeSpot() {
+        super(SpotType.TWO_WHEELER_SPOT);
     }
 }
-
+class CarSpot extends Spot {
+    CarSpot() {
+        super(SpotType.FOUR_WHEELER_SPOT);
+    }
+}
+class HeavyVehicleSpot extends Spot {
+    HeavyVehicleSpot() {
+        super(SpotType.HEAVY_VEHICLE_SPOT);
+    }
+}
 
 interface ParkingLotAppInterface {
     Ticket enter(Vehicle vehicle);
 
-    Spot parkVehicle(Vehicle vehicle);
+    Spot parkVehicle(Ticket ticket);
 
     Bill exit(Ticket ticket);
 
@@ -87,17 +148,64 @@ interface ParkingLotAppInterface {
 }
 
 interface layoutInterface {
+    Spot getAvailableSpot(VehicleType vehicleType);
+}
 
+interface Storage {
+    Spot getEmptySpot(SpotType type);
+}
+
+@AllArgsConstructor
+class InMemoryDao implements Storage {
+    Map<SpotType, List<Spot>> map;
+
+    @Override
+    public Spot getEmptySpot(SpotType type) {
+        int flag = 0;
+        for (SpotType spotType : Spot.getOrderedSpot()) {
+            if (type.equals(spotType)) {
+                flag = 1;
+            }
+            if (flag == 1) {
+                List<Spot> list = map.getOrDefault(spotType, new ArrayList<>());
+                for (Spot spot : list) {
+                    if (spot.isEmpty()) {
+                        return spot;
+                    }
+                }
+            }
+        }
+        return null;
+    }
 }
 
 @AllArgsConstructor
 @Data
-abstract class BaseParkingLayout {
+abstract class BaseParkingLayout implements layoutInterface {
+    Storage storage;
 
+    @Override
+    public Spot getAvailableSpot(VehicleType vehicleType) {
+        SpotType minLevel = null;
+        switch (vehicleType) {
+            case BIKE:
+                minLevel = SpotType.TWO_WHEELER_SPOT;
+                break;
+            case CAR:
+                minLevel = SpotType.FOUR_WHEELER_SPOT;
+                break;
+            case TRUCK:
+                minLevel = SpotType.HEAVY_VEHICLE_SPOT;
+                break;
+        }
+        return storage.getEmptySpot(minLevel);
+    }
 }
 
 class ParkingLayout extends BaseParkingLayout {
-
+    ParkingLayout(Storage storage) {
+        super(storage);
+    }
 }
 
 @AllArgsConstructor
@@ -148,18 +256,17 @@ class ParkingLotApp implements ParkingLotAppInterface {
     BillingStrategy billingStrategy;
     Logger logger;
 
-    static ParkingLotApp getInstance() {
-        return new ParkingLotApp(new ParkingLayout(), new PaymentManager(), new BasicBillingStrategy(), new Logger());
-    }
-
     @Override
     public Ticket enter(Vehicle vehicle) {
-        return new Ticket(vehicle.number, new Date());
+        return new Ticket(vehicle.number, new Date(), vehicle);
     }
 
     @Override
-    public Spot parkVehicle(Vehicle vehicle) {
-        return null;
+    public Spot parkVehicle(Ticket ticket) {
+        Vehicle vehicle = ticket.vehicle;
+        Spot spot = parkingLayout.getAvailableSpot(vehicle.vehicleType);
+        spot.setSpotStatus(SpotStatus.OCCUPIED);
+        return spot;
     }
 
     @Override
@@ -181,7 +288,18 @@ class ParkingLotApp implements ParkingLotAppInterface {
 public class ParkingLot {
     public static void main(String[] args) {
         System.out.println("ParkingLot.main()");
-        ParkingLotApp app = ParkingLotApp.getInstance();
-        System.out.println(app.parkVehicle(new Car("KA-53-MK-0926")));
+        ParkingLotApp app = new ParkingLotApp(
+                new ParkingLayout(new InMemoryDao(Map.of(
+                    SpotType.TWO_WHEELER_SPOT, List.of(new BikeSpot()),
+                    SpotType.FOUR_WHEELER_SPOT, List.of(new CarSpot()),
+                    SpotType.HEAVY_VEHICLE_SPOT, List.of(new HeavyVehicleSpot())
+                ))),
+                new PaymentManager(),
+                new BasicBillingStrategy(),
+                new Logger());
+        System.out.println(app.parkVehicle(app.enter(new Bike("KA-53-MK-0926"))));
+        System.out.println(app.parkVehicle(app.enter(new Bike("KA-53-MK-0926"))));
+        System.out.println(app.parkVehicle(app.enter(new Bike("KA-53-MK-0926"))));
+        System.out.println(app.parkVehicle(app.enter(new Bike("KA-53-MK-0926"))));
     }
 }
