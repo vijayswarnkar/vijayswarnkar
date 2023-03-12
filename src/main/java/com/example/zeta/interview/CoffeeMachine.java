@@ -1,4 +1,4 @@
-package interview;
+package com.example.zeta.interview;
 
 interface Beverage {
     int getPrice();
