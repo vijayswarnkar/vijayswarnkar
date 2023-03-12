@@ -46,8 +46,14 @@ class Ticket {
     Vehicle vehicle;
     Spot spot;
     int id;
+    TicketStatus ticketStatus;
 }
-
+enum TicketStatus {
+    ENTERED,
+    PARKED,
+    EXITED,
+    PAID
+}
 @AllArgsConstructor
 @Data
 class Bill {
@@ -279,7 +285,7 @@ class ParkingLotApp implements ParkingLotAppInterface {
 
     @Override
     public Ticket enter(Vehicle vehicle) {
-        Ticket ticket = new Ticket(vehicle.number, new Date(), vehicle, null, -1);
+        Ticket ticket = new Ticket(vehicle.number, new Date(), vehicle, null, -1, TicketStatus.ENTERED);
         ticketManager.setTicket(ticket);
         return ticket;
     }
@@ -327,5 +333,6 @@ public class ParkingLot {
         System.out.println(app.parkVehicle(app.enter(new Bike("KA-53-MK-0926"))));
         app.exit(app.ticketManager.getTicket(3));
         System.out.println(app.parkVehicle(app.enter(new Bike("KA-53-MK-0926"))));
+        // System.out.println(app.ticketManager.tMap);
     }
 }
