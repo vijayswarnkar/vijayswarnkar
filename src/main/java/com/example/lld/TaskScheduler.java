@@ -53,5 +53,3 @@ public class TaskScheduler implements TaskSchedulerInterface {
         taskScheduler.addTask(()-> System.out.println("First Task"), new Date(System.currentTimeMillis()+5000));
     }
 }
-
-// test push
