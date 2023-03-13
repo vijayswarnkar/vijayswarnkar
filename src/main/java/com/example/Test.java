@@ -2,6 +2,16 @@ package com.example;
 
 import java.util.*;
 
+class Myclass {    
+    private static Myclass objMyclass;
+    public static Myclass getInstance() {
+        if(objMyclass == null) {
+            objMyclass = new Myclass();
+        }
+        return objMyclass;
+    }
+}
+
 public class Test {
     public static void main(String[] args) {
         System.out.println("Test.main()");
@@ -15,5 +25,9 @@ public class Test {
             set1.remove(x);
         }
         System.out.println(set1);
+        Myclass obj = Myclass.getInstance();
+        Myclass obj2 = Myclass.getInstance();
+        System.out.println(obj);
+        System.out.println(obj2);
     }
 }

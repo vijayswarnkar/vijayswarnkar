@@ -1,6 +1,7 @@
 package com.example;
 
 import java.util.*;
+
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
@@ -48,12 +49,14 @@ class Ticket {
     int id;
     TicketStatus ticketStatus;
 }
+
 enum TicketStatus {
     ENTERED,
     PARKED,
     EXITED,
     PAID
 }
+
 @AllArgsConstructor
 @Data
 class Bill {
@@ -67,7 +70,7 @@ interface SpotInterface {
 
     boolean park(Vehicle vehicle);
 
-    boolean release(Vehicle vehicle);
+    boolean release();
 }
 
 @Data
@@ -98,16 +101,18 @@ abstract class Spot implements SpotInterface {
         if (spotStatus.equals(SpotStatus.FREE)) {
             spotStatus = SpotStatus.OCCUPIED;
             this.vehicle = vehicle;
+            System.out.println(this + " -> parked");
             return true;
         }
         return false;
     }
 
     @Override
-    public boolean release(Vehicle vehicle) {
+    public boolean release() {
         if (spotStatus.equals(SpotStatus.OCCUPIED)) {
             spotStatus = SpotStatus.FREE;
             this.vehicle = null;
+            System.out.println(this + " -> released");
             return true;
         }
         return false;
@@ -168,11 +173,11 @@ interface Storage {
 }
 
 @AllArgsConstructor
-class InMemoryDao implements Storage {
+@Data
+abstract class BaseParkingLayout implements layoutInterface {
     Map<SpotType, List<Spot>> map;
 
-    @Override
-    public Spot getEmptySpot(SpotType type) {
+    Spot getEmptySpot(SpotType type) {
         int flag = 0;
         for (SpotType spotType : Spot.getOrderedSpot()) {
             if (type.equals(spotType)) {
@@ -189,12 +194,6 @@ class InMemoryDao implements Storage {
         }
         return null;
     }
-}
-
-@AllArgsConstructor
-@Data
-abstract class BaseParkingLayout implements layoutInterface {
-    Storage storage;
 
     @Override
     public Spot getAvailableSpot(VehicleType vehicleType) {
@@ -210,14 +209,48 @@ abstract class BaseParkingLayout implements layoutInterface {
                 minLevel = SpotType.HEAVY_VEHICLE_SPOT;
                 break;
         }
-        return storage.getEmptySpot(minLevel);
+        return this.getEmptySpot(minLevel);
     }
 }
 
 class ParkingLayout extends BaseParkingLayout {
-    ParkingLayout(Storage storage) {
-        super(storage);
+    ParkingLayout(Map<SpotType, List<Spot>> map) {
+        super(map);
     }
+}
+
+class NewParkingLayout extends BaseParkingLayout {
+
+    public static Map<SpotType, List<Spot>> levelsToMap(List<Level> levels) {
+        Map<SpotType, List<Spot>> map = new HashMap<>();
+        for (Level level : levels) {
+            for (Row row : level.rows) {
+                for (Spot spot : row.spots) {
+                    List<Spot> list = map.getOrDefault(spot.spotType, new ArrayList<>());
+                    list.add(spot);
+                    map.put(spot.spotType, list);
+                }
+            }
+        }
+        System.out.println(map);
+        return map;
+    }
+
+    NewParkingLayout(List<Level> levels) {
+        super(levelsToMap(levels));
+    }
+}
+
+@AllArgsConstructor
+class Level {
+    List<Row> rows;
+    boolean isActive;
+}
+
+@AllArgsConstructor
+class Row {
+    List<Spot> spots;
+    boolean isActive;
 }
 
 @AllArgsConstructor
@@ -263,21 +296,23 @@ class Logger {
 class TicketManager {
     Map<Integer, Ticket> tMap = new HashMap<>();
     int counter = 0;
-    public Ticket getTicket(int id){
+
+    public Ticket getTicket(int id) {
         return tMap.getOrDefault(id, null);
-    }    
-    public void setTicket(Ticket ticket){
+    }
+
+    public void setTicket(Ticket ticket) {
         counter++;
         ticket.id = counter;
-        System.out.println(ticket);
+        // System.out.println(ticket);
         tMap.put(counter, ticket);
-    }    
+    }
 }
 
 @AllArgsConstructor
 @Data
 class ParkingLotApp implements ParkingLotAppInterface {
-    ParkingLayout parkingLayout;
+    BaseParkingLayout parkingLayout;
     PaymentManager paymentManager;
     BillingStrategy billingStrategy;
     Logger logger;
@@ -294,14 +329,19 @@ class ParkingLotApp implements ParkingLotAppInterface {
     public Spot parkVehicle(Ticket ticket) {
         Vehicle vehicle = ticket.vehicle;
         Spot spot = parkingLayout.getAvailableSpot(vehicle.vehicleType);
-        ticket.setSpot(spot);
-        spot.setSpotStatus(SpotStatus.OCCUPIED);
+        if (spot != null) {
+            spot.park(vehicle);
+            ticket.setSpot(spot);
+        } else {
+            System.out.println("No spot available. " + ticket);
+        }
         return spot;
     }
 
     @Override
     public Bill exit(Ticket ticket) {
-        ticket.spot.setSpotStatus(SpotStatus.FREE);
+        ticket.spot.release();
+        ticket.spot = null;
         return calculateBill(ticket);
     }
 
@@ -320,19 +360,42 @@ public class ParkingLot {
     public static void main(String[] args) {
         System.out.println("ParkingLot.main()");
         ParkingLotApp app = new ParkingLotApp(
-                new ParkingLayout(new InMemoryDao(Map.of(
+                new ParkingLayout(Map.of(
                         SpotType.TWO_WHEELER_SPOT, List.of(new BikeSpot()),
                         SpotType.FOUR_WHEELER_SPOT, List.of(new CarSpot()),
-                        SpotType.HEAVY_VEHICLE_SPOT, List.of(new HeavyVehicleSpot())))),
+                        SpotType.HEAVY_VEHICLE_SPOT, List.of(new HeavyVehicleSpot()))),
                 new PaymentManager(),
                 new BasicBillingStrategy(),
                 new Logger(),
                 new TicketManager());
-        System.out.println(app.parkVehicle(app.enter(new Bike("KA-53-MK-0926"))));
-        System.out.println(app.parkVehicle(app.enter(new Bike("KA-53-MK-0926"))));
-        System.out.println(app.parkVehicle(app.enter(new Bike("KA-53-MK-0926"))));
+        app.parkVehicle(app.enter(new Bike("KA-53-MK-0926")));
+        app.parkVehicle(app.enter(new Bike("KA-53-MK-0926")));
+        app.parkVehicle(app.enter(new Bike("KA-53-MK-0926")));
+        // app.exit(app.ticketManager.getTicket(3));
+        app.parkVehicle(app.enter(new Bike("KA-53-MK-0926")));
+        // System.out.println(app.ticketManager.tMap);
+    }
+}
+
+class ParkingLotRunner2 {
+    public static void main(String[] args) {
+        System.out.println("ParkingLot.main()");
+        ParkingLotApp app = new ParkingLotApp(
+                new NewParkingLayout(List.of(
+                        new Level(List.of(
+                                new Row(List.of(
+                                        new CarSpot(), new BikeSpot(), new HeavyVehicleSpot()),
+                                        true)),
+                                true))),
+                new PaymentManager(),
+                new BasicBillingStrategy(),
+                new Logger(),
+                new TicketManager());
+        app.parkVehicle(app.enter(new Bike("KA-53-MK-0926")));
+        app.parkVehicle(app.enter(new Bike("KA-53-MK-0926")));
+        app.parkVehicle(app.enter(new Bike("KA-53-MK-0926")));
         app.exit(app.ticketManager.getTicket(3));
-        System.out.println(app.parkVehicle(app.enter(new Bike("KA-53-MK-0926"))));
+        app.parkVehicle(app.enter(new Bike("KA-53-MK-0926")));
         // System.out.println(app.ticketManager.tMap);
     }
 }
