@@ -3,9 +3,11 @@ package com.example;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
+import java.io.Serializable;
+
 @Data
 @AllArgsConstructor
-public class Pair<K,V> {
+public class Pair<K,V> implements Serializable {
     private K key;
     private V value;
     public static<K,V> Pair<K,V> of(K key, V value){
