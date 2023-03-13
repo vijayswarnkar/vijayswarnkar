@@ -78,10 +78,12 @@ abstract class Spot implements SpotInterface {
     SpotStatus spotStatus;
     SpotType spotType;
     Vehicle vehicle;
+    String metadata;
 
     Spot(SpotType spotType) {
         this.spotType = spotType;
         this.spotStatus = SpotStatus.FREE;
+        this.metadata = "";
     }
 
     @Override
