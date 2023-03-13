@@ -225,10 +225,15 @@ class NewParkingLayout extends BaseParkingLayout {
 
     public static Map<SpotType, List<Spot>> levelsToMap(List<Level> levels) {
         Map<SpotType, List<Spot>> map = new HashMap<>();
+        int i = 0;
         for (Level level : levels) {
+            i++;
+            int j = 0;
             for (Row row : level.rows) {
+                j++;
                 for (Spot spot : row.spots) {
                     List<Spot> list = map.getOrDefault(spot.spotType, new ArrayList<>());
+                    spot.setMetadata("{level:" + i + ", row:" + j + "}");
                     list.add(spot);
                     map.put(spot.spotType, list);
                 }
@@ -386,7 +391,12 @@ class ParkingLotRunner2 {
                 new NewParkingLayout(List.of(
                         new Level(List.of(
                                 new Row(List.of(
-                                        new CarSpot(), new BikeSpot(), new HeavyVehicleSpot()),
+                                        new CarSpot()),
+                                        true)),
+                                true),
+                        new Level(List.of(
+                                new Row(List.of(
+                                        new CarSpot(), new HeavyVehicleSpot()),
                                         true)),
                                 true))),
                 new PaymentManager(),
@@ -398,6 +408,6 @@ class ParkingLotRunner2 {
         app.parkVehicle(app.enter(new Bike("KA-53-MK-0926")));
         app.exit(app.ticketManager.getTicket(3));
         app.parkVehicle(app.enter(new Bike("KA-53-MK-0926")));
-        // System.out.println(app.ticketManager.tMap);
+        System.out.println(app.ticketManager.tMap);
     }
 }
