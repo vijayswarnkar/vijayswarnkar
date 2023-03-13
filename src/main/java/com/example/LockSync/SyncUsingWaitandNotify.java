@@ -1,0 +1,159 @@
+package com.example.LockSync;
+
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
+
+class Buffer<T> {
+
+    List<T> items;
+    private int capacity;
+
+    private Lock pcLock = new ReentrantLock();
+
+    Buffer(int capacity){
+        this.items = new ArrayList<>(capacity);
+        this.capacity = capacity;
+    }
+
+    T getItem() {
+        T item = null;
+        while (true) {
+            pcLock.lock();
+
+            if(items.size() > 0) {
+                item = items.remove(items.size() -1);
+                break;
+            }
+
+            pcLock.unlock();
+        }
+
+        pcLock.unlock();
+        return item;
+    }
+
+    void addItem(T item) {
+        while (true) {
+            pcLock.lock();
+
+            if (items.size() < capacity) {
+                items.add(item);
+                break;
+            }
+            pcLock.unlock();
+        }
+        pcLock.unlock();
+    }
+
+}
+
+class Buffer2<T> {
+
+    List<T> items;
+    private int capacity;
+
+    private Lock canProduce = new ReentrantLock();
+    private Lock canConsume= new ReentrantLock();
+
+    public Buffer2(int capacity){
+        this.items = new ArrayList<>(capacity);
+        this.capacity = capacity;
+    }
+
+    public synchronized T getItem() throws InterruptedException {
+        T item = null;
+
+        while(items.size() == 0)
+            wait();
+
+        if(items.size() > 0) {
+            item = items.remove(items.size() - 1);
+        }
+
+        notifyAll();
+        return item;
+    }
+
+    public synchronized void addItem(T item) throws InterruptedException {
+        while(items.size() == capacity)
+            wait();
+
+        items.add(item);
+
+        notifyAll();
+    }
+
+}
+class Producer extends Thread{
+
+    public String producerName;
+    Buffer<String> buffer;
+
+    public Producer(String name, Buffer<String> buffer) {
+        this.producerName = name;
+        this.buffer = buffer;
+    }
+
+    @Override
+    public void run() {
+        for(int i = 0; i < 10; i++) {
+            System.out.println(producerName + " produces item " + i);
+            buffer.addItem(i + " produced by: " + producerName);
+        }
+
+    }
+}
+
+class Consumer extends Thread{
+
+    public String consumerName;
+    Buffer<String> buffer;
+
+    public Consumer(String name, Buffer<String> buffer) {
+        this.consumerName = name;
+        this.buffer = buffer;
+    }
+
+    @Override
+    public void run() {
+        for(int i = 0; i < 10; i++) {
+            String item = null;
+            item = buffer.getItem();
+            System.out.println("The item \"" + item + "\" consumed by " + consumerName);
+        }
+
+    }
+}
+
+public class SyncUsingWaitandNotify {
+
+    public static void main(String[] args) throws InterruptedException {
+
+        Buffer<String> buffer = new Buffer<>(5);
+
+        HashSet<Thread> producers = new HashSet<>();
+        HashSet<Thread> consumers = new HashSet<>();
+
+        for(int i = 0; i < 1; i++) {
+            producers.add(new Producer("Producer"+i, buffer));
+        }
+        for(int i = 0; i < 2; i++) {
+            consumers.add(new Consumer("Consumer"+i, buffer));
+        }
+
+        consumers.forEach(Thread::start);
+        producers.forEach(Thread::start);
+
+        for (Thread producer : producers) {
+            producer.join();
+        }
+
+        for (Thread consumer : consumers) {
+            consumer.join();
+        }
+    }
+
+}
