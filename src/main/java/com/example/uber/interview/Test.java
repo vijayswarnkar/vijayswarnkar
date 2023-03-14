@@ -66,8 +66,10 @@ class SchedulerImpl implements Scheduler {
 
     @Override
     public void cancelTask(Task task) {
-        System.out.println("Task " + task.toString() + " cancelled");
-        map.put(task, false);
+        synchronized (map) {
+            System.out.println("Task " + task.toString() + " cancelled");
+            map.put(task, false);
+        }
     }
 
     @Override
@@ -77,12 +79,14 @@ class SchedulerImpl implements Scheduler {
 
     @Override
     public boolean execute(Task task) {
-        if(map.getOrDefault(task, false)){
-            scheduleRecurring(task);
-            new Thread(task.runnable).start();
-            return true;
+        synchronized (map) {
+            if (map.getOrDefault(task, false)) {
+                scheduleRecurring(task);
+                new Thread(task.runnable).start();
+                return true;
+            }
+            map.remove(task);
         }
-        map.remove(task);
         return false;
     }
 }
@@ -125,7 +129,7 @@ public class Test {
         for (int i = 0; i < 10; i++) {
             int finalI = i;
             Runnable runnable = () -> System.out.println("task completed" + finalI);
-            Task task = new Task(runnable, finalI+1, TimeUnit.SECONDS, true, 0, i);
+            Task task = new Task(runnable, finalI + 1, TimeUnit.SECONDS, true, 0, i);
             scheduler.addTask(task);
         }
         for (int i = 0; i < 10; i++) {
