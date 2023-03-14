@@ -1,10 +1,8 @@
-package com.example.uber;
+package com.example.uber.interview;
 
 import lombok.AllArgsConstructor;
-import lombok.Data;
 import lombok.SneakyThrows;
 
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.PriorityQueue;
