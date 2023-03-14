@@ -1,7 +1,9 @@
 package com.example.uber.interview;
 
 import lombok.AllArgsConstructor;
+import lombok.Data;
 import lombok.SneakyThrows;
+import lombok.ToString;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -19,6 +21,12 @@ class Task {
     TimeUnit timeUnit;
     boolean recurring;
     long time;
+    int id;
+
+    @Override
+    public String toString() {
+        return "Task Id:" + id;
+    }
 }
 
 interface Scheduler {
@@ -28,17 +36,22 @@ interface Scheduler {
 
     void stopRecurring(Task task);
 
-    void execute();
+    boolean execute(Task task);
 }
 
+@Data
+@ToString
 class SchedulerImpl implements Scheduler {
     final PriorityQueue<Task> pq = new PriorityQueue<>((a, b) -> (int) (a.time - b.time));
     Map<Task, Boolean> map = new HashMap<>(); //
+    Map<Integer, Task> tMap = new HashMap<>();
 
     @Override
     public void addTask(Task task) {
         synchronized (pq) {
+            System.out.println("Task " + task.toString() + " Added");
             task.time = System.currentTimeMillis() + task.timeUnit.toMillis(task.duration);
+            tMap.put(task.id, task);
             pq.add(task);
             map.put(task, true);
             pq.notifyAll();
@@ -46,13 +59,14 @@ class SchedulerImpl implements Scheduler {
     }
 
     void scheduleRecurring(Task task) {
-        if (task.recurring) {
+        if (task.recurring && map.get(task)) {
             addTask(task);
         }
     }
 
     @Override
     public void cancelTask(Task task) {
+        System.out.println("Task " + task.toString() + " cancelled");
         map.put(task, false);
     }
 
@@ -62,8 +76,14 @@ class SchedulerImpl implements Scheduler {
     }
 
     @Override
-    public void execute() {
-
+    public boolean execute(Task task) {
+        if(map.getOrDefault(task, false)){
+            scheduleRecurring(task);
+            new Thread(task.runnable).start();
+            return true;
+        }
+        map.remove(task);
+        return false;
     }
 }
 
@@ -74,17 +94,6 @@ class ExecuterClass implements Runnable {
         this.obj = obj;
     }
 
-    /**
-     * When an object implementing interface {@code Runnable} is used
-     * to create a thread, starting the thread causes the object's
-     * {@code run} method to be called in that separately executing
-     * thread.
-     * <p>
-     * The general contract of the method {@code run} is that it may
-     * take any action whatsoever.
-     *
-     * @see Thread#run()
-     */
     @SneakyThrows
     @Override
     public void run() {
@@ -93,8 +102,7 @@ class ExecuterClass implements Runnable {
                 if (!obj.pq.isEmpty()) {
                     Task top = obj.pq.peek();
                     if (top.time <= System.currentTimeMillis()) {
-                        obj.scheduleRecurring(top);
-                        new Thread(top.runnable).start();
+                        obj.execute(top);
                         obj.pq.remove();
                     } else {
                         obj.pq.wait(top.time - System.currentTimeMillis());
@@ -116,9 +124,16 @@ public class Test {
 
         for (int i = 0; i < 10; i++) {
             int finalI = i;
-            Runnable runnable = () -> System.out.println("task" + finalI);
-            Task task = new Task(runnable, i + 1, TimeUnit.SECONDS, true, 0);
+            Runnable runnable = () -> System.out.println("task completed" + finalI);
+            Task task = new Task(runnable, finalI+1, TimeUnit.SECONDS, true, 0, i);
             scheduler.addTask(task);
         }
+        for (int i = 0; i < 10; i++) {
+            int finalI = i;
+            Task task = new Task(() -> scheduler.cancelTask(scheduler.tMap.get(finalI)), 5, TimeUnit.SECONDS, false, 0,
+                    i + 10);
+            scheduler.addTask(task);
+        }
+        // System.out.println(scheduler.toString());
     }
 }
