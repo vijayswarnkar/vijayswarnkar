@@ -43,7 +43,7 @@ interface Scheduler {
 @ToString
 class SchedulerImpl implements Scheduler {
     final PriorityQueue<Task> pq = new PriorityQueue<>((a, b) -> (int) (a.time - b.time));
-    Map<Task, Boolean> map = new HashMap<>(); //
+    final Map<Task, Boolean> map = new HashMap<>();
     Map<Integer, Task> tMap = new HashMap<>();
 
     @Override
