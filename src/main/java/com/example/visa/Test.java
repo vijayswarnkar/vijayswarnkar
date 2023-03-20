@@ -11,11 +11,13 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 // 
 
 public class Test {
+    static int ctr = 0;
     static double squareRoot(int x){   
         return squareRoot(x, 0.0, x);     
     }
 
     static double squareRoot(int x, double y, double z){        
+        ctr++;
         double m = (y+z)/2;      
         System.out.println(m);  
         if(m*m == x){
@@ -85,7 +87,9 @@ public class Test {
     }
     public static void main(String[] args) {
         System.out.println("Hello, World");
-        System.out.println(squareRoot(9));
+        System.out.println(squareRoot(6));
+        System.out.println(ctr);
+        System.out.println(Math.pow(2, ctr));
         System.out.println(match("ababcab", "a.*ab"));
     }
 }
