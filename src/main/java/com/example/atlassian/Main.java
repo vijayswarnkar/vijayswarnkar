@@ -1,12 +1,10 @@
 package com.example.atlassian;
-
-
 // Rate limiter service which works on cust_id{integer} - already fed to system
 // isAllowed(1) - t/f
 
+// import javafx.util.Pair;
 import lombok.AllArgsConstructor;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -20,8 +18,7 @@ interface RateLimiter {
 enum Strategy {
     TOKEN_BUCKET_STRATEGY,
     FIXED_WINDOW_COUNTER_STRATEGY
-};
-
+}
 @AllArgsConstructor
 class Config {
     int id; // 1
@@ -101,9 +98,8 @@ class RateLimiterImplFactory {
         }
     }
 }
-public class RateLimiterLatest {
+public class Main {
     public static void main(String[] args) throws Exception {
         System.out.println("Hello World!");
-        
     }
 }
