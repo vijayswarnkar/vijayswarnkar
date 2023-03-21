@@ -98,7 +98,6 @@ class ExecuterClass implements Runnable {
         this.obj = obj;
     }
 
-    @SneakyThrows
     @Override
     public void run() {
         while (true) {
@@ -109,10 +108,18 @@ class ExecuterClass implements Runnable {
                         obj.execute(top);
                         obj.pq.remove();
                     } else {
-                        obj.pq.wait(top.time - System.currentTimeMillis());
+                        try {
+                            obj.pq.wait(top.time - System.currentTimeMillis());
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
                     }
                 } else {
-                    obj.pq.wait();
+                    try {
+                        obj.pq.wait();
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
                 }
             }
         }
