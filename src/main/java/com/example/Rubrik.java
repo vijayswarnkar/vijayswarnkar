@@ -1,3 +1,4 @@
+package com.example;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
