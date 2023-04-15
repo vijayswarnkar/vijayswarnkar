@@ -2,6 +2,9 @@ package com.example.uber.interview.coding;
 
 import java.io.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
+
+import lombok.AllArgsConstructor;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import java.util.*;
 
@@ -66,11 +69,9 @@ class Task {
     }
 }
 
+@AllArgsConstructor
 class RunTasks implements Runnable {
     Stack<Task> tasks;
-    RunTasks(Stack<Task> tasks){
-        this.tasks = tasks;
-    }
     @Override
     public void run(){
         while(!tasks.isEmpty()){
