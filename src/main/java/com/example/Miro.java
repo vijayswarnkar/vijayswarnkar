@@ -1,6 +1,7 @@
 // Storage - per topic wise
 // producer
 // consumer - consume
+package com.example;
 
 import lombok.AllArgsConstructor;
 import lombok.SneakyThrows;
