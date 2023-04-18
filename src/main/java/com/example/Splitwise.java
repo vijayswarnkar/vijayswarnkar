@@ -77,15 +77,13 @@ public class Splitwise implements SplitWiseInterface {
     public void simplifyExpense(Group group) {
         throw new UnsupportedOperationException("Unimplemented method 'simplifyExpense'");
     }
-
-}
-class App {
     public static void main(String[] args) {
         System.out.println("SplitWise!");
-        SplitWise splitWise = new SplitWise();
-        Group group1 = splitWise.createGroup()
+        Splitwise splitwise = new Splitwise();
+        Group group1 = splitwise.createGroup()
             .addUser(new User("A"))
             .addUser(new User("B"));
-        splitWise.addExpense(null);
+        // splitwise.addExpense(null);
     }
+
 }
