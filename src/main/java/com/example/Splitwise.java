@@ -1,9 +1,11 @@
 package com.example;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import lombok.AllArgsConstructor;
+import lombok.Data;
 
 interface SplitWiseInterface {
     void addExpense(Expense expense);
@@ -17,11 +19,26 @@ interface SplitWiseInterface {
     void simplifyExpense(Group group);
 }
 
+class Balance {
+    int amount;
+    String currency;
+}
+enum ExpenseType {
+    EQUAL,
+    PERCENT,
+    UNEQUAL
+}
+@Data
 class Expense{
-
+    int gid;
+    ExpenseType expenseType;
+    List<User> users;
+    List<Double> weights;
+    String comments;    
 }
 class Group{
     Set<User> users = new HashSet<>();
+    int gid;
     Group addUser(User user){
         users.add(user);
         return this;
@@ -31,8 +48,11 @@ class Group{
 class User{
     String name;
 }
-public class Splitwise implements SplitWiseInterface {
+class ExpenseManager {
     
+}
+public class Splitwise implements SplitWiseInterface {
+    ExpenseManager expenseManager;
     @Override
     public void addExpense(Expense expense) {
         throw new UnsupportedOperationException("Unimplemented method 'addExpense'");
