@@ -117,3 +117,81 @@ public class Main {
         assertFalse(rateLimiter.isAllowed(1));
     }
 }
+/*
+ * /*
+Design an in memory library that facilities tagging and counting of any kind of Items.
+
+You are given a bunch of Products with some tags, like id, size, price, category, etc. Implement a way to retrieve counts of these products based on filters, and additional grouping done on fields.
+
+Sample product attributes:
+
+{
+	"product": "id1",
+	"category": "book",
+	"subCategory": "education",
+	"price": 200,
+	"size": 10
+}
+Sample Query 1:
+Count of products with category=“book”, grouped by subcategory
+Input:
+
+{
+	"filter": {
+		"category": "book"
+	}
+	"groupedBy": "subCategory"
+}
+Output:
+
+{
+	"totalCount": 56,
+	"subCategory": {
+		"education":10,
+		"crime": 34
+		"horror": 12
+	}
+}
+Sample Query 2:
+Count of products with category=“book” and price=200, grouped by subcategory
+Input:
+
+{
+	"filter": {
+		"category": "book",
+		"price": 200
+	}
+	"groupedBy": "subCategory"
+}
+Output:
+
+{
+	"totalCount": 7,
+	"subCategory": {
+		"education":2,
+		"crime": 5
+	}
+}
+Requirements P0:
+Interfaces for accepting products
+Interfaces for taking query, and return counts
+Right models for Products, and how Queries are expressed
+Requirements P1:
+Index products on price range (200-500 ... 500+) and show counts based on that
+Supporting complicated boolean queries with AND and OR (earlier in P0, the filter section only meant AND)
+Constraints:
+You are NOT allowed to use any database,
+only simple in-memory data structures allowed
+You are NOT allowed to use any third party libraries for search
+You are NOT required to have a full-fledged web service or APIs exposed
+Just a main class that simulates the above operations is enough
+How you will be evaluated
+Separation of concerns
+Abstractions
+Application of OO design principles
+Testability
+Code readability
+Language proficiency
+[execution time limit] 3 seconds (java)
+ */
+ */

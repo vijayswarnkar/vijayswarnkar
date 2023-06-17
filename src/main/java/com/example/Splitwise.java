@@ -1,109 +1,119 @@
 package com.example;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
-interface SplitWiseInterface {
-    void addExpense(Expense expense);
-    void getHistory();
-    void getHistory(User user);
-    void getHistory(Group group);
-    Group createGroup();
-    void printExpense();
-    void printExpense(Group group);
-    void simplifyExpense();
-    void simplifyExpense(Group group);
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+enum SplitType {
+    EQUAL,
+    UNEQUAL,
+    PERCENT
 }
 
+@AllArgsConstructor
+@Data
+class Expense {
+    int id;
+    List<User> users;
+    List<Double> userShares;
+    Double totalAmount;
+    SplitType splitType;
+}
+
+@AllArgsConstructor
+@Data
+class User {
+    String name;
+}
+
+@AllArgsConstructor
 class Balance {
     int amount;
     String currency;
 }
-enum ExpenseType {
-    EQUAL,
-    PERCENT,
-    UNEQUAL
+
+interface SplitwiseInterface {
+    void addExpense(Expense expense);
 }
-@Data
-class Expense{
-    int gid;
-    ExpenseType expenseType;
-    List<User> users;
-    List<Double> weights;
-    String comments;    
+
+interface SettlementStrategy {
+    List<UserDebt> settle(List<UserDebt> userDebtList);
 }
-class Group{
-    Set<User> users = new HashSet<>();
-    int gid;
-    Group addUser(User user){
-        users.add(user);
-        return this;
+
+@AllArgsConstructor
+class UserDebt {
+    User user;
+    Balance debtMap;
+}
+
+class BaseSettlementStrategy implements SettlementStrategy {
+    @Override
+    public List<UserDebt> settle(List<UserDebt> userDebtList) {
+        return userDebtList;
     }
 }
-@AllArgsConstructor
-class User{
-    String name;
+class HistoryManager {
+
 }
+
+
 class ExpenseManager {
-    
+    Map<User, Balance> userBalanceMap;
+
+    Map<User, Double> getUserShareMap(Expense expense){
+        Map<User, Double> tempUserBalanceMap = new HashMap<>();
+        switch (expense.splitType){
+            case EQUAL:
+                for(User user: expense.users){
+                    tempUserBalanceMap.put(user, expense.totalAmount/expense.users.size());
+                }
+                break;
+            case PERCENT:
+                break;
+            case UNEQUAL:
+                break;
+        }
+        return tempUserBalanceMap;
+    }
+
+    void updateTotalBalance(Map<User, Double> shares){
+
+    }
+
+    void add(Expense expense){
+        Map<User, Double> shares = getUserShareMap(expense);
+        updateTotalBalance(shares);
+    }
 }
-public class Splitwise implements SplitWiseInterface {
+
+@AllArgsConstructor
+public class Splitwise implements SplitwiseInterface {
+    SettlementStrategy settlementStrategy;
     ExpenseManager expenseManager;
+
     @Override
     public void addExpense(Expense expense) {
-        throw new UnsupportedOperationException("Unimplemented method 'addExpense'");
+        expenseManager.add(expense);
     }
+}
 
-    @Override
-    public void getHistory() {
-        throw new UnsupportedOperationException("Unimplemented method 'getHistory'");
-    }
-
-    @Override
-    public void getHistory(User user) {
-        throw new UnsupportedOperationException("Unimplemented method 'getHistory'");
-    }
-
-    @Override
-    public void getHistory(Group group) {
-        throw new UnsupportedOperationException("Unimplemented method 'getHistory'");
-    }
-
-    @Override
-    public Group createGroup() {
-        return new Group();
-    }
-
-    @Override
-    public void printExpense() {
-        throw new UnsupportedOperationException("Unimplemented method 'printExpense'");
-    }
-
-    @Override
-    public void printExpense(Group group) {
-        throw new UnsupportedOperationException("Unimplemented method 'printExpense'");
-    }
-
-    @Override
-    public void simplifyExpense() {
-        throw new UnsupportedOperationException("Unimplemented method 'simplifyExpense'");
-    }
-
-    @Override
-    public void simplifyExpense(Group group) {
-        throw new UnsupportedOperationException("Unimplemented method 'simplifyExpense'");
-    }
+class SplitwiseRunner {
     public static void main(String[] args) {
-        System.out.println("SplitWise!");
-        Splitwise splitwise = new Splitwise();
-        Group group1 = splitwise.createGroup()
-            .addUser(new User("A"))
-            .addUser(new User("B"));
-        // splitwise.addExpense(null);
+        System.out.println("SplitwiseRunner.main");
+        Splitwise splitwise = new Splitwise(
+                new BaseSettlementStrategy(),
+                new ExpenseManager());
+        User user1 = new User("user1");
+        User user2 = new User("user2");
+        User user3 = new User("user3");
+        splitwise.addExpense(new Expense(1,
+                List.of(user1, user2, user3),
+                null, 3000.0,
+                SplitType.EQUAL));
+        splitwise.show();
     }
-
 }
